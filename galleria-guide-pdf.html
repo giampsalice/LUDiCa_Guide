@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="Galleria delle guide L.U.Di.Ca. con lettore PDF integrato">
-  <title>Guide L.U.Di.Ca.</title>
-  <style>
+  <title>Guide del LUDiCa</title>
+    <style>
     :root{--ink:#202124;--muted:#64717b;--red:#c50000;--blue:#008fd5;--paper:#f4f7f9;--line:#d9e0e5;--white:#fff;--shadow:0 12px 32px rgba(25,38,48,.13)}
     *{box-sizing:border-box}
     body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
@@ -122,6 +122,11 @@
       if(!cleaned) return "";
       try{
         const u=new URL(cleaned);
+        /* Evita il blocco "mixed content": una pagina HTTPS non può caricare
+           un PDF indicato con HTTP. GitHub Pages è disponibile in HTTPS. */
+        if(u.protocol==="http:" && u.hostname.toLowerCase().endsWith(".github.io")){
+          u.protocol="https:";
+        }
         /* Converte automaticamente:
            https://github.com/utente/repository/blob/ramo/cartella/file.pdf
            in:
