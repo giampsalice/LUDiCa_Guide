@@ -117,12 +117,33 @@
     }
     const normalize=s=>String(s||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
     const safeUrl=value=>{try{const u=new URL(String(value||"").trim(),location.href);return ["http:","https:"].includes(u.protocol)?u.href:"";}catch{return "";}};
+    const directPdfUrl=value=>{
+      const cleaned=safeUrl(value);
+      if(!cleaned) return "";
+      try{
+        const u=new URL(cleaned);
+        /* Converte automaticamente:
+           https://github.com/utente/repository/blob/ramo/cartella/file.pdf
+           in:
+           https://raw.githubusercontent.com/utente/repository/ramo/cartella/file.pdf */
+        if(u.hostname.toLowerCase()==="github.com"){
+          const parts=u.pathname.split("/").filter(Boolean);
+          const marker=parts.indexOf("blob");
+          if(marker===2 && parts.length>4){
+            const [owner,repo]=parts;
+            const remainder=parts.slice(marker+1).map(decodeURIComponent).map(encodeURIComponent).join("/");
+            return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${remainder}`;
+          }
+        }
+        return u.href;
+      }catch{return cleaned;}
+    };
     function rowsToRecords(rows){
       const headers=(rows.shift()||[]).map(normalize);
       const find=(...names)=>headers.findIndex(h=>names.some(n=>h===n||h.startsWith(n)));
       const iTitle=find("titolo"), iBody=find("contenuto","descrizione"), iPdf=find("url per leggere","url pdf","pdf"), iImage=find("url immagine anteprima","immagine anteprima","anteprima");
       if(iTitle<0||iPdf<0) throw new Error("Il foglio deve contenere almeno le colonne ‘titolo’ e ‘url per leggere’. ");
-      return rows.map(r=>({title:(r[iTitle]||"").trim(),body:(r[iBody]||"").trim(),pdf:safeUrl(r[iPdf]),image:iImage>=0?safeUrl(r[iImage]):""})).filter(x=>x.title&&x.pdf);
+      return rows.map(r=>({title:(r[iTitle]||"").trim(),body:(r[iBody]||"").trim(),pdf:directPdfUrl(r[iPdf]),image:iImage>=0?safeUrl(r[iImage]):""})).filter(x=>x.title&&x.pdf);
     }
     function esc(s){const e=document.createElement("span");e.textContent=s;return e.innerHTML;}
     function renderCards(list){
